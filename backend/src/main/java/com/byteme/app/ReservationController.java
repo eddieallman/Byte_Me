@@ -78,6 +78,7 @@ public class ReservationController {
                 bundle.getSeller().getLocationText()
         ));
     }
+    
 
     @PostMapping("/{id}/verify")
     public ResponseEntity<?> verify(@PathVariable UUID id, @RequestBody VerifyRequest req) {
