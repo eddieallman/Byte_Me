@@ -1,4 +1,4 @@
-### Security Documentation
+# Security Documentation
 
 This document describes the security design of the backend system, including JWT authentication, Spring Security configuration, and access control for all API endpoints.
 
