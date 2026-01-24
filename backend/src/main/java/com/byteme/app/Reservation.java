@@ -21,6 +21,7 @@ public class Reservation {
     @JoinColumn(name = "posting_id", nullable = false)
     private BundlePosting posting;
 	public void setBundlePosting(BundlePosting bundlePostingValue) { this.posting = bundlePostingValue; }
+    public void setPosting(BundlePosting posting) { this.posting = posting; }
 	public BundlePosting getBundlePosting() { return this.posting; }
     public BundlePosting getPosting() { return this.posting; }
 
