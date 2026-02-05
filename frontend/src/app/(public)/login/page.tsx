@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      router.push("/home");
+      router.push(user.role === "SELLER" ? "/dashboard" : "/home");
     }
   }, [user, router]);
 

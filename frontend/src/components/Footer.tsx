@@ -27,7 +27,7 @@ export default function Footer() {
         </FooterColumn>
 
         <FooterColumn title="Partners">
-          <FooterLink href="/sellers">Become a Seller</FooterLink>
+          <FooterLink href="/register">Become a Seller</FooterLink>
           <FooterLink href="/organizations">For Organizations</FooterLink>
           <FooterLink href="/dashboard">Dashboard</FooterLink>
           <FooterLink href="/support">Support</FooterLink>
