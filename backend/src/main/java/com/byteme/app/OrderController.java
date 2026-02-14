@@ -22,18 +22,23 @@ public class OrderController {
     private final OrganisationRepository orgRepo;
     private final OrganisationStreakCacheRepository streakRepo;
     private final SellerRepository sellerRepo;
+    private final BadgeRepository badgeRepo;
+    private final OrganisationBadgeRepository orgBadgeRepo;
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom random = new SecureRandom();
 
     // Constructor injection
     public OrderController(ReservationRepository reservationRepo, BundlePostingRepository bundleRepo,
                            OrganisationRepository orgRepo, OrganisationStreakCacheRepository streakRepo,
-                           SellerRepository sellerRepo, PasswordEncoder passwordEncoder) {
+                           SellerRepository sellerRepo, BadgeRepository badgeRepo,
+                           OrganisationBadgeRepository orgBadgeRepo, PasswordEncoder passwordEncoder) {
         this.reservationRepo = reservationRepo;
         this.bundleRepo = bundleRepo;
         this.orgRepo = orgRepo;
         this.streakRepo = streakRepo;
         this.sellerRepo = sellerRepo;
+        this.badgeRepo = badgeRepo;
+        this.orgBadgeRepo = orgBadgeRepo;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -119,7 +124,7 @@ public class OrderController {
     // Collect order
     @PostMapping("/{id}/collect")
     @org.springframework.transaction.annotation.Transactional
-    public ResponseEntity<?> collect(@PathVariable UUID id, @RequestBody(required = false) ClaimRequest claimReq) {
+    public ResponseEntity<?> collect(@PathVariable UUID id, @RequestBody ClaimRequest claimReq) {
         // Find reservation
         var reservation = reservationRepo.findById(id).orElse(null);
         if (reservation == null) return ResponseEntity.notFound().build();
@@ -129,11 +134,12 @@ public class OrderController {
             return ResponseEntity.badRequest().body("Reservation not in RESERVED status");
         }
 
-        // Verify claim code
-        if (claimReq != null && claimReq.getClaimCode() != null) {
-            if (!passwordEncoder.matches(claimReq.getClaimCode(), reservation.getClaimCodeHash())) {
-                return ResponseEntity.badRequest().body("Invalid claim code");
-            }
+        // Verify claim code (required)
+        if (claimReq == null || claimReq.getClaimCode() == null || claimReq.getClaimCode().isBlank()) {
+            return ResponseEntity.badRequest().body("Claim code is required");
+        }
+        if (!passwordEncoder.matches(claimReq.getClaimCode(), reservation.getClaimCodeHash())) {
+            return ResponseEntity.badRequest().body("Invalid claim code");
         }
 
         // Mark as collected
@@ -141,9 +147,10 @@ public class OrderController {
         reservation.setCollectedAt(Instant.now());
         reservationRepo.save(reservation);
 
-        // Update org streak
+        // Update org streak and check badge awards
         var org = reservation.getOrganisation();
         updateOrgStreak(org);
+        checkBadgeAwards(org);
 
         return ResponseEntity.ok(new CollectResponse(true, "Reservation collected successfully"));
     }
@@ -204,6 +211,47 @@ public class OrderController {
 
         streak.setUpdatedAt(Instant.now());
         streakRepo.save(streak);
+    }
+
+    // Award badges based on collection milestones
+    private void checkBadgeAwards(Organisation org) {
+        UUID orgId = org.getOrgId();
+        var existingBadges = orgBadgeRepo.findByOrgId(orgId);
+        var existingCodes = existingBadges.stream()
+                .map(ob -> ob.getBadge().getCode())
+                .collect(Collectors.toSet());
+
+        // FIRST_RESCUE: first ever collection
+        long collectedCount = reservationRepo.findByOrganisationOrgId(orgId).stream()
+                .filter(r -> r.getStatus() == Reservation.Status.COLLECTED)
+                .count();
+
+        if (collectedCount >= 1 && !existingCodes.contains("FIRST_RESCUE")) {
+            awardBadge(orgId, "FIRST_RESCUE");
+        }
+
+        // STREAK_4: 4-week consecutive streak
+        var streak = streakRepo.findById(orgId).orElse(null);
+        if (streak != null && streak.getCurrentStreakWeeks() >= 4 && !existingCodes.contains("STREAK_4")) {
+            awardBadge(orgId, "STREAK_4");
+        }
+
+        // CO2_SAVER: 10+ collections
+        if (collectedCount >= 10 && !existingCodes.contains("CO2_SAVER")) {
+            awardBadge(orgId, "CO2_SAVER");
+        }
+    }
+
+    // Award a badge by code to an org
+    private void awardBadge(UUID orgId, String badgeCode) {
+        var badge = badgeRepo.findByCode(badgeCode).orElse(null);
+        if (badge == null) return;
+
+        OrganisationBadge ob = new OrganisationBadge();
+        ob.setOrgId(orgId);
+        ob.setBadgeId(badge.getBadgeId());
+        ob.setAwardedAt(Instant.now());
+        orgBadgeRepo.save(ob);
     }
 
     // Create order request data
