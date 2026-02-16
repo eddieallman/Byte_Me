@@ -1,5 +1,6 @@
 package com.byteme.app;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
@@ -21,12 +22,13 @@ public class OrganisationBadge {
     private UUID badgeId;
 
     // Link to organisation
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "org_id", insertable = false, updatable = false)
     private Organisation organisation;
 
     // Link to badge
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "badge_id", insertable = false, updatable = false)
     private Badge badge;
 

@@ -11,9 +11,9 @@
     </parent>
     
     <groupId>com.byteme</groupId>
-    <artifactId>rescuebites</artifactId>
+    <artifactId>byteme</artifactId>
     <version>0.1.0</version>
-    <name>Rescue Bites</name>
+    <name>Byte Me</name>
     <description>Food waste reduction marketplace</description>
     
     <properties>
