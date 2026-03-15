@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/store/auth.store";
 import { ordersApi } from "@/lib/api/api";
+import FoodSafetyDisclaimer from "@/components/FoodSafetyDisclaimer";
 
 interface OrgReservation {
   reservationId: string;
@@ -103,6 +104,10 @@ export default function OrgReservationsPage() {
       </div>
 
       {error && <div className="alert alert-error mb-4" role="alert">{error}</div>}
+
+      <div className="mb-4">
+        <FoodSafetyDisclaimer />
+      </div>
 
       {/* Pickup reminders */}
       <PickupReminders reservations={reservations} />
