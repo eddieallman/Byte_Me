@@ -43,18 +43,22 @@ export default function SellerAnalyticsPage() {
     setLoading(true);
     setError("");
     try {
-      const [h, f, c, r, a] = await Promise.all([
+      const [h, f, c, r] = await Promise.all([
         forecastApi.history(sellerId, token),
         forecastApi.results(sellerId, token),
         forecastApi.comparison(sellerId, token),
         forecastApi.recommendations(sellerId, token),
-        forecastApi.actions(sellerId, token),
       ]);
       setHistory(h);
       setForecasts(f);
       setRuns(c);
       setRecommendations(r);
-      setActions(a);
+      try {
+        const a = await forecastApi.actions(sellerId, token);
+        setActions(a);
+      } catch {
+        // Actions log is non-critical
+      }
     } catch {
       setError("Failed to load forecast data.");
     } finally {
